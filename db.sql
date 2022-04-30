@@ -1,3 +1,4 @@
+-- phpMyAdmin SQL
 -- version 4.9.5
 -- https://www.phpmyadmin.net/
 --
