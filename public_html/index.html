@@ -1,0 +1,989 @@
+<!doctype html>
+<html>
+<head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        
+        <!-- mobile meta 
+        <meta name="viewport"
+              content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="apple-mobile-web-app-capable"
+              content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style"
+              content="black-translucent" /-->
+
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>	
+		
+		<style>
+            body { margin: 0; padding: 0; background: #000;}
+           /* canvas {
+                display: block;
+                margin: 0 auto;
+                background: #000;
+                overflow: hidden;
+                image-rendering: optimizeSpeed;
+                -ms-interpolation-mode: nearest-neighbor;
+                -webkit-optimize-contrast;
+                -webkit-touch-callout: none;
+            } */ 	
+		</style> 
+  <title>Spin</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="pixi.min.js"></script>
+</head>
+<body>
+
+
+
+
+
+<input type="hidden" name="betUrl" id="betUrl" value="15:1|100:2|20:2,3,5,6|15:1|100:3,6|25:16,17,19,20|21:RED|19:2NDC">
+<input type="text" name="betResult" id="betResult"size="50" value="">
+<br><button id="betButton">Bet</button>
+
+
+<button onclick="clearTimeout(myVar)">Stop it</button>
+
+<button onclick="vel--;if (vel<5){posRadiusBall=radius-90;}">Reduce spin</button><br>
+
+
+
+<script>
+
+
+var targetWidth=800;
+var targetHeight=1400;
+var widthHalf=targetWidth/2;
+var radius=300;
+var posBallX = widthHalf;
+var posBallY= 12;
+
+
+const app = new PIXI.Application({
+    width: targetWidth, height: targetHeight, backgroundColor: 0x006600, resolution: window.devicePixelRatio || 1,
+});
+document.body.appendChild(app.view);
+
+const container = new PIXI.Container();
+
+app.stage.addChild(container);
+
+
+//var app = new PIXI.Application(targetWidth, targetHeight, {backgroundColor : 0x006600});
+//document.body.appendChild(app.view);
+
+// create a new Sprite from an image path
+const rouletteTexture = PIXI.Texture.from('assets/roulette.svg');
+
+const roulette = new PIXI.Sprite(rouletteTexture);
+const tableTexture = PIXI.Texture.from('assets/table.svg');
+const table = new PIXI.Sprite(tableTexture);
+
+
+var arrayChips=[];
+
+
+function createChip(value){
+    const chipTexture = PIXI.Texture.from('assets/'+value+'.png');
+	const chip = new PIXI.Sprite(chipTexture);
+	
+	chip.anchor.set(0.5);
+	
+	chip.myData=value;
+	chip.buttonMode = true;
+	chip.interactive = true;
+	if (value==0){
+		chip.x = targetWidth-50;
+		chip.y = targetHeight-500
+		chip.on('mousedown', removeChips)
+			.on('touchstart', removeChips)
+	}else if (value==1){
+		chip.x = targetWidth-50;
+		chip.y = targetHeight-400;
+	}else if (value==5){
+		chip.x = targetWidth-50;
+		chip.y = targetHeight-300;
+
+	}else if (value==25){
+		chip.x = targetWidth-50;
+		chip.y = targetHeight-200;
+	}else if (value==100){
+		chip.x = targetWidth-50;
+		chip.y = targetHeight-100;
+		
+		
+	}
+	if (value!=0){
+		
+		
+		//chip.on('pointerdown', onDragStart).on('pointerup', onDragEnd).on('pointerupoutside', onDragEnd).on('pointermove', onDragMove);
+		chip.on('mousedown', onDragStart)
+			.on('touchstart', onDragStart)
+			.on('mousedown', onDragStartA)
+			.on('touchstart', onDragStartA)
+			// events for drag end
+			.on('mouseup', onDragEnd)
+			//.on('mouseupoutside', onDragEnd)
+			.on('touchend', onDragEnd)
+			//.on('touchendoutside', onDragEnd)
+			.on('mouseup', onDragEndA)
+			//.on('mouseupoutside', onDragEndA)
+			.on('touchend', onDragEndA)
+			//.on('touchendoutside', onDragEndA)	
+			
+			// events for drag move
+			.on('mousemove', onDragMove)
+			.on('touchmove', onDragMove)
+			.on('mousemove', onDragMoveA)
+			.on('touchmove', onDragMoveA);
+		
+		
+	}	
+	
+	
+	
+
+	app.stage.addChild(chip);
+	
+
+	
+}
+
+var betsArray=new Array(37).fill(0);
+var specialBets='';
+var totalBets=0;
+
+
+function removeChips(){
+
+for (var i = 0; i < arrayChips.length; i++) {
+	app.stage.removeChild(arrayChips[i]);
+
+}
+if(totalBets>0){
+	account=parseFloat(account)+totalBets;
+}
+
+	totalBets=0;
+	cashText.text = "Cash: "+account+" Bet: "+totalBets+" Win: 0";
+	arrayChips=[];
+	betsArray=new Array(37).fill(0);
+	specialBets='';
+}
+
+
+function onDragStartA(event) {
+	//console.log('test');
+	app.stage.removeChild(this);
+	createChip(this.myData);
+	this.scale.set(0.5);
+	app.stage.addChild(this);
+	
+}
+
+
+function onDragMoveA() {
+	this.isbet=false;
+	this.isLeftBet=false;
+	this.isCeroBet=false;
+	this.isTripleBet=false;
+	for (i = 1; i <= 5; i++) {
+		for (j = 1; j < 24; j++) {
+			origX=squareX+(squareWidth*i);
+			origY=squareY+(squareHeight*j)
+			
+			if (this.x>origX && this.x<=(origX+squareWidth)){
+				if (this.y>origY && this.y<=(origY+squareHeight)){
+			
+					
+					
+					this.x=origX+(squareWidth/2);
+					this.y=origY+(squareHeight/2);
+				    				
+					this.i=i;
+					this.j=j;
+					this.isbet=true;
+				}
+			}
+		
+			
+		}
+	}
+	
+	
+	origX=ceroX;
+	origY=ceroY;	
+	
+	if (this.x>origX && this.x<=(origX+ceroWidth)){
+		if (this.y>origY && this.y<=(origY+ceroHeight)){
+					this.x=origX+(ceroWidth/2);
+				    this.y=origY+(ceroHeight/2);			
+					this.i=0;
+					this.j=0;
+					this.isCeroBet=true;
+		}
+	}
+	
+	
+	for (i = 0; i < 2; i++) {
+		for (j = 0; j < 6; j++) {	
+			origX=rectangleX+(rectangleWidth*i);
+			origY=rectangleY+(rectangleHeight*j)		
+			if (this.x>origX && this.x<=(origX+rectangleWidth)){
+				if (this.y>origY && this.y<=(origY+rectangleHeight)){
+
+					this.x=origX+(rectangleWidth/2);
+					if(i==1){
+						if (j % 2 == 0){
+							this.y=origY+rectangleHeight;
+						}else{
+							this.y=origY;
+						}
+					
+					}else{
+					
+						
+						this.y=origY+(rectangleHeight/2);
+					}	
+					
+					this.i=i;
+					this.j=j;
+					this.isLeftBet=true;
+					
+				}
+			}	
+		}
+	}
+	
+	
+	for (i = 0; i < 3; i++) {
+		
+			origX=tripleX+(tripleWidth*i);
+			origY=tripleY;
+			if (this.x>origX && this.x<=(origX+tripleWidth)){
+				if (this.y>origY && this.y<=(origY+tripleHeight)){
+
+					this.x=origX+(tripleWidth/2);
+	
+						
+					this.y=origY+(tripleHeight/2);
+	
+					
+					this.i=i;
+					this.j=0;
+					this.isTripleBet=true;
+					
+				}
+			}	
+		
+	}
+	
+}
+
+function onDragEndA(){
+	if (this.isbet || this.isLeftBet || this.isCeroBet || this.isTripleBet){
+		if (this.isbet){
+			column=Math.floor(this.i/2)+1;
+			fila=Math.floor(this.j/2);
+			if (this.i % 2 == 1){
+				if (this.j % 2 == 1){
+
+
+					betsArray[(3*fila)+column]+=this.myData;
+					
+				}else{
+					betsArray[(3*(fila-1))+column]+=this.myData/2;
+					betsArray[(3*fila)+column]+=this.myData/2;
+				}
+			}else{
+				if (this.j % 2 == 1){
+					betsArray[(3*fila)+column-1]+=this.myData/2;
+					betsArray[(3*fila)+column]+=this.myData/2;
+				
+				
+				}else{
+				
+					betsArray[(3*(fila-1))+column]+=this.myData/4;
+					betsArray[(3*fila)+column]+=this.myData/4;
+					betsArray[(3*fila)+column-1]+=this.myData/4;
+					betsArray[(3*(fila-1))+column-1]+=this.myData/4;
+				
+				
+				}
+			}
+			
+			
+			
+		} else if (this.isLeftBet){
+		
+			if (this.i==0){
+				if (this.j==0){
+					specialBets+=this.myData+':1STH|';
+				}else if (this.j==1){
+					specialBets+=this.myData+':EVEN|';
+				}else if (this.j==2){
+					specialBets+=this.myData+':RED|';
+				}else if (this.j==3){
+					specialBets+=this.myData+':BLACK|';
+				}else if (this.j==4){
+					specialBets+=this.myData+':ODD|';
+				}else if (this.j==5){
+					specialBets+=this.myData+':2NDH|';
+				}
+			
+			}else{
+				if (this.j<2){
+					specialBets+=this.myData+':1STC|';
+				}else if (this.j>=2 && this.j<4){
+					specialBets+=this.myData+':2NDC|';
+				}else if (this.j>=4 && this.j<6){
+					specialBets+=this.myData+':3RDC|';
+				}
+			}
+		} else if (this.isCeroBet){
+			betsArray[0]+=this.myData;
+			
+		} else if (this.isTripleBet){
+			if (this.i==0){
+				specialBets+=this.myData+':1STC|';
+			}else if (this.i==1){
+				specialBets+=this.myData+':2NDC|';
+			}else if (this.i==2){
+				specialBets+=this.myData+':3RDC|';
+			}
+		}
+		
+		totalBets+=this.myData;
+		account-=this.myData;
+		cashText.text = "Cash: "+account+" Bet: "+totalBets+" Win: 0";
+		arrayChips.push(this);
+		
+	}else{
+		app.stage.removeChild(this);
+	}
+	
+}
+
+
+
+//15:1|100:2|20:2,3,5,6|15:1|100:3,6|25:16,17,19,20|21:RED|19:2NDC
+function stringBets(){
+var bets='';
+
+for (var i = 0; i < 37; i++) {
+	if (betsArray[i]>0){
+		bets+=betsArray[i]+':'+i+'|';
+	
+	}
+
+}
+return bets;
+}
+
+			
+			
+			
+
+// center the sprite's anchor point
+roulette.anchor.set(0.5);
+//table.anchor.set(0.5);
+// move the sprite to the center of the screen
+roulette.x = widthHalf;
+roulette.y = radius;
+table.x = 250;
+table.y=600;
+
+
+// Opt-in to interactivity
+roulette.interactive = true;
+
+// Shows hand cursor
+roulette.buttonMode = true;
+
+
+var ball = new PIXI.Graphics();
+
+
+ball.lineStyle(2, 0x444444, 1);
+ball.beginFill(0x888888, 1);
+ball.drawCircle(0, -288,10);
+ball.endFill();
+
+
+roulette.addChild(ball);
+
+app.stage.addChild(roulette);
+app.stage.addChild(table);
+
+
+
+// draw a shape
+squareX=316;
+squareY=644;
+squareWidth=35;
+squareHeight=28;
+
+rectangleX=255;
+rectangleY=662;
+rectangleWidth=42;
+rectangleHeight=110;
+
+ceroX=340;
+ceroY=610;
+ceroWidth=200;
+ceroHeight=50;
+
+tripleX=338;
+tripleY=1325;
+tripleWidth=68;
+tripleHeight=58;
+
+/*
+var graphics = new PIXI.Graphics();
+	graphics.lineStyle(1, 0xFFFF00, 1);
+function createGraphics(x,y,width,height){
+	
+
+
+	graphics.moveTo(x,y);
+	graphics.lineTo(x,y+height);
+	graphics.lineTo(x+width, y+height);
+	graphics.lineTo(x+width, y);
+	graphics.lineTo(x,y);
+	graphics.endFill();
+	
+	
+	
+}
+
+
+for (i = 1; i <= 5; i++) {
+	for (j = 1; j < 24; j++) {
+		createGraphics(squareX+(squareWidth*i),squareY+(squareHeight*j),squareWidth, squareHeight);
+	}
+}
+for (i = 0; i < 2; i++) {
+	for (j = 0; j < 6; j++) {
+		
+		createGraphics(rectangleX+(rectangleWidth*i),rectangleY+(rectangleHeight*j),rectangleWidth, rectangleHeight);
+	}
+}
+createGraphics(ceroX,ceroY,ceroWidth, ceroHeight);
+
+for (i = 0; i < 3; i++) {
+	createGraphics(tripleX+(tripleWidth*i),tripleY,tripleWidth, tripleHeight);
+}
+
+app.stage.addChild(graphics);
+*/
+
+createChip(0);
+createChip(1);
+createChip(5);
+createChip(25);
+createChip(100);
+
+
+var isRotating= false;
+
+
+
+
+// Listen for animate update
+
+var angle=0; 
+
+var highBall=radius-12;
+var lowBall=radius-90;
+var posRadiusBall=highBall;
+var vel=8;
+
+var numWin=-1;
+var account=0;
+var accountWin=0;
+
+var style = new PIXI.TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 36,
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+    fill: ['#ffffff', '#00ff99'], // gradient
+    stroke: '#4a1850',
+    strokeThickness: 5,
+    dropShadow: true,
+    dropShadowColor: '#000000',
+    dropShadowBlur: 4,
+    dropShadowAngle: Math.PI / 6,
+    dropShadowDistance: 6,
+    wordWrap: true,
+    wordWrapWidth: 600
+});
+
+
+function readCookie(name) {
+	var nameEQ = name + "=";
+	var ca = document.cookie.split(';');
+	for (var i = 0; i < ca.length; i++) {
+		var c = ca[i];
+		while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+	}
+	return null;
+}
+		
+function deleteCookie( name ) {
+  document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}		
+		
+var userId = readCookie("ID_USER");
+
+
+
+var richText = new PIXI.Text('Place your bets and spin it', style);
+richText.x = 30;
+richText.y = 180;
+var cashText = new PIXI.Text("Cash: "+account+" Bet: "+totalBets+" Win: "+accountWin, style);
+cashText.x = 30;
+cashText.y = 1350;
+
+
+
+
+var loginText = new PIXI.Text('Login', style);
+loginText.x = 30;
+loginText.y = 10;
+
+var userRegister = new PIXI.Text('Register', style);
+userRegister.x = 30;
+userRegister.y = 60;
+
+
+loginText.interactive = true;
+loginText.buttonMode = true;
+loginText.on("mousedown", function(e) {
+	window.location = "login.php";
+});
+userRegister.interactive = true;
+userRegister.buttonMode = true;
+userRegister.on("mousedown", function(e) {
+	if(userRegister.text=='Sign off' ) {
+		deleteCookie('TOTAL');
+		deleteCookie('ID_USER');
+		window.location = "/";
+		
+	}else{
+		window.location = "registration.php";
+	}
+	
+});
+
+
+
+
+
+
+app.stage.addChild(richText);
+app.stage.addChild(cashText);
+app.stage.addChild(loginText);
+app.stage.addChild(userRegister);
+
+
+if (userId!=null){
+	account=readCookie("TOTAL");
+	cashText.text = "Cash: "+account+" Bet: "+totalBets+" Win: "+accountWin, style;
+	
+	loginText.interactive = false;
+	loginText.buttonMode = false;
+	loginText.text = "User: "+userId;
+	userRegister.text = "Sign off";
+	
+}else{
+userId=0;
+
+}
+
+
+
+
+
+
+
+
+app.ticker.add(function(delta) {
+    // just for fun, let's rotate mr rabbit a little
+    // delta is 1 if running at 100% performance
+    // creates frame-independent tranformation
+	if (isRotating){
+		roulette.rotation += 0.02 * delta;	
+	}else{
+	  roulette.rotation =0;
+	  vel=0;
+	
+	}
+
+
+var prevousRot=roulette.rotation;
+roulette.rotation =0;
+	if (vel==0){
+	
+	   
+	  
+	  if (numWin==0){
+		drawBall(300,80);
+	  }else if (numWin==32){
+		drawBall(340,83);
+	  } else if (numWin==15){
+		drawBall(375,90);
+	  }	else if (numWin==19){
+		drawBall(400,100);
+	  }	else if (numWin==4){
+		drawBall(430,125);
+	  }	else if (numWin==21){
+		drawBall(460,150);	 	
+	  }	else if (numWin==2){
+	  drawBall(480,180); 
+	  }	else if (numWin==25){
+	  drawBall(495,205);
+	  }	else if (numWin==17){
+	  drawBall(505,245);		  
+	  }	else if (numWin==34){
+	  drawBall(510,285);	
+	  
+	  }	else if (numWin==6){
+	  drawBall(510,320);
+	  }	else if (numWin==27){
+	  drawBall(500,355);
+	  }	else if (numWin==13){
+	  drawBall(490,385);
+	  }	else if (numWin==36){
+	  drawBall(470,415);
+	  }	else if (numWin==11){
+	  drawBall(445,440);
+	  }	else if (numWin==30){
+	  drawBall(420,460);  
+	  }	else if (numWin==8){
+	  drawBall(385,480);	  
+	  }	else if (numWin==23){
+	  drawBall(345,495);
+	  }	else if (numWin==10){
+	  drawBall(310,500);
+	  
+	  }	else if (numWin==5){
+	  drawBall(280,500);
+	  }	else if (numWin==24){
+	  drawBall(240,490);
+	  }	else if (numWin==16){
+	  drawBall(210,480);
+	  }	else if (numWin==33){
+	  drawBall(180,460);
+	  }	else if (numWin==1){
+	  drawBall(150,435);
+	  }	else if (numWin==20){
+	  drawBall(125,410);
+	  }	else if (numWin==14){
+	  drawBall(110,380);
+	  }	else if (numWin==31){
+	  drawBall(100,355);
+	  }	else if (numWin==9){
+	  drawBall(90,320);
+	  }	else if (numWin==22){
+	  drawBall(90,290);
+	  
+	  }	else if (numWin==18){
+	  drawBall(95,245);
+	  }	else if (numWin==29){
+	  drawBall(105,205);
+	  }	else if (numWin==7){
+	  drawBall(125,175);
+	  }	else if (numWin==28){
+	  drawBall(140,150);
+	  }	else if (numWin==12){
+	  drawBall(170,120);
+	  }	else if (numWin==35){
+	  drawBall(190,110);
+	  }	else if (numWin==3){
+	  drawBall(230,90);
+	  }	else if (numWin==26){
+	  drawBall(270,80);
+	  }
+	
+	}else{
+	
+	
+
+
+		
+		
+		posBallX=posRadiusBall*Math.cos(-angle)*delta
+		posBallY=posRadiusBall*Math.sin(-angle)*delta
+		
+		ball.x=posBallX;
+		ball.y=posBallY+288;
+		
+	}	
+		
+		roulette.rotation =prevousRot;
+		
+		angle+=vel/100;
+		if (angle>90)
+			angle=0;
+			
+
+	
+
+		if (vel<=4){
+			if (posRadiusBall>lowBall){
+				posRadiusBall-=0.5*delta;
+			}
+		} 
+		
+
+    
+
+});
+
+
+
+
+
+
+
+
+function drawBall(x,y) {
+
+	ball.x=x-300;
+	ball.y=y;
+}
+
+
+  
+function onDragStart(event) {
+    // store a reference to the data
+    // the reason for this is because of multitouch
+    // we want to track the movement of this particular touch
+    this.data = event.data;
+    this.alpha = 0.5;
+    this.dragging = true;
+}
+
+function onDragEnd() {
+    this.alpha = 1;
+    this.dragging = false;
+    // set the interaction data to null
+    this.data = null;
+}
+
+function onDragMove() {
+    if (this.dragging) {
+        var newPosition = this.data.getLocalPosition(this.parent);
+        this.x = newPosition.x;
+        this.y = newPosition.y;
+    }
+}
+
+
+function restart(){
+	posRadiusBall=highBall;
+	vel=8;
+
+	numWin=-1;
+	isRotating=false;
+	//richText = 'Place your bets and spin it';
+	
+}
+var idBet=0;
+
+
+var onClick = function(){
+
+
+	
+
+function finishWiner(res) {
+
+
+	
+	var check = function(){
+    if (vel == 1 ) {
+        
+		numWin=res[0];
+		
+		
+		accountWin=res[1];
+		account=res[2];
+		account=account-totalBets;
+		richText.text = numWin+' wins!';
+		cashText.text = "Cash: "+account+" Bet: "+totalBets+" Win: "+accountWin;
+		vel=0;
+		setTimeout(restart, 5000);
+    }
+    else {
+	
+		vel--;
+		
+		
+		
+		
+	
+        setTimeout(check, 1000); // check again in a second
+		
+		
+    }
+	}
+
+	check();
+	
+	
+	
+
+}
+
+
+function worker() {
+
+  $.getJSON({
+	url: 'https://luckyitnow.000webhostapp.com/check.php', data:{ idbet : idBet },
+	success: function(data) {
+		
+
+	  if (data.length==3){
+		result=true;
+		finishWiner(data);
+	  
+	  }else if (data.length==1) {
+	  
+		if(data[0]=='no bets'){
+			richText.text = 'No bets in place';
+			
+			result=true;
+			restart();		
+		}
+	  
+		
+	  
+	  }
+	  
+	  
+	},
+	complete: function() {
+
+	  if (!result){
+		setTimeout(worker, 5000);
+	  }
+	  
+	}
+  });
+}	
+
+var result=false;
+
+if (!isRotating){
+
+
+	$.getJSON({url: 'https://luckyitnow.000webhostapp.com/bet.php', data:{ bet : stringBets()+specialBets, user : userId } , success: function(data){
+
+		if (data.length==2){
+			richText.text = data[0];
+			if(data[0]=='ok'){
+			
+				richText.text = '';
+				vel=8;
+				isRotating=true;
+				numWin=-1;
+				posRadiusBall=highBall;
+			
+				setTimeout(worker, 5000);
+				idBet=data[1]; 
+				
+			} else {
+				richText.text = data[0];
+				account=data[1];
+			}
+		
+		
+		}else if (data.length==1){
+			richText.text = data[0];
+		}
+		
+		
+    }});
+		
+	}
+
+//$("#betButton").click(function(){
+
+
+
+
+}
+//);
+
+// Pointers normalize touch and mouse
+roulette.on('pointerdown', onClick);
+
+
+fullscreenify( app.view );
+
+function fullscreenify(canvas) {
+	var style = canvas.getAttribute('style') || '';
+
+	window.addEventListener('resize', function () {resize(canvas);}, false);
+
+	resize(canvas);
+
+	function resize(canvas) {
+		var scale = {x: 1, y: 1};
+		scale.x = (window.innerWidth - 17) / canvas.width;
+		//scale.y = (window.innerHeight - 10) / canvas.height;
+		/*
+		console.log(window.innerWidth +' vs '+ canvas.width);
+		console.log(window.innerHeight +' vs '+ canvas.height);
+		console.log(scale.x);*/
+		
+
+		
+		scale = scale.x + ','+scale.x;
+		//console.log('resize');
+		canvas.setAttribute('style', style + ' ' + '-ms-transform-origin: left top; -webkit-transform-origin: left top; -moz-transform-origin: left top; -o-transform-origin: left top; transform-origin: left top; -ms-transform: scale(' + scale + '); -webkit-transform: scale3d(' + scale + ', 1); -moz-transform: scale(' + scale + '); -o-transform: scale(' + scale + '); transform: scale(' + scale + ');');
+		
+
+	}
+}
+
+
+/*
+var resize = function () {
+        window.addEventListener('resize', rendererResize);
+        window.addEventListener('deviceOrientation', rendererResize);
+};
+
+
+var rendererResize = function () {
+    var width = window.innerWidth,
+        height = window.innerHeight,
+        targetScale;
+
+
+    app.view.width = width * window.devicePixelRatio;
+    app.view.height = height * window.devicePixelRatio;
+    app.view.style.width = width + 'px';
+    app.view.style.height = height + 'px';
+
+	
+    app.renderer.resize(app.view.width, app.view.height);
+
+
+     if (height / targetHeight < width / targetWidth) {
+         app.stage.scale.x = app.stage.scale.y = height / targetHeight;
+     } else {
+         app.stage.scale.x = app.stage.scale.y = width / targetWidth;
+     }
+
+    window.scrollTo(0, 0);
+};
+
+resize();*/
+
+</script>
+</body>
+</html>

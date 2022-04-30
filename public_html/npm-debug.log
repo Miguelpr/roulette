@@ -1,0 +1,43 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'C:\\Program Files\\nodejs\\node.exe',
+1 verbose cli   'C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js',
+1 verbose cli   'install',
+1 verbose cli   'pixi.js' ]
+2 info using npm@2.14.7
+3 info using node@v4.2.1
+4 verbose install initial load of C:\Users\M\Desktop\mio\web\spin\package.json
+5 verbose readDependencies loading dependencies from C:\Users\M\Desktop\mio\web\spin\package.json
+6 silly cache add args [ 'pixi.js', null ]
+7 verbose cache add spec pixi.js
+8 silly cache add parsed spec Result {
+8 silly cache add   raw: 'pixi.js',
+8 silly cache add   scope: null,
+8 silly cache add   name: null,
+8 silly cache add   rawSpec: 'pixi.js',
+8 silly cache add   spec: 'C:\\Users\\M\\Desktop\\mio\\web\\spin\\pixi.js',
+8 silly cache add   type: 'local' }
+9 silly addLocalTarball shasum (computed) 2655c66122f2275291d3786fc2ac99c2347e7215
+10 verbose addTmpTarball C:\Users\M\Desktop\mio\web\spin\pixi.js not in flight; adding
+11 verbose addTmpTarball validating metadata from C:\Users\M\Desktop\mio\web\spin\pixi.js
+12 verbose tar unpack C:\Users\M\Desktop\mio\web\spin\pixi.js
+13 verbose tar unpacking to C:\Users\M\AppData\Local\Temp\npm-3128-4424fe92\unpack-f06d57fad94a
+14 silly gentlyRm C:\Users\M\AppData\Local\Temp\npm-3128-4424fe92\unpack-f06d57fad94a is being purged
+15 verbose gentlyRm don't care about contents; nuking C:\Users\M\AppData\Local\Temp\npm-3128-4424fe92\unpack-f06d57fad94a
+16 silly gunzTarPerm modes [ '777', '666' ]
+17 error not a package C:\Users\M\Desktop\mio\web\spin\pixi.js
+18 error addLocal Could not install C:\Users\M\Desktop\mio\web\spin\pixi.js
+19 verbose stack Error: ENOENT: no such file or directory, open 'C:\Users\M\AppData\Local\Temp\npm-3128-4424fe92\unpack-f06d57fad94a\package.json'
+19 verbose stack     at Error (native)
+20 verbose cwd C:\Users\M\Desktop\mio\web\spin
+21 error Windows_NT 6.2.9200
+22 error argv "C:\\Program Files\\nodejs\\node.exe" "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js" "install" "pixi.js"
+23 error node v4.2.1
+24 error npm  v2.14.7
+25 error path C:\Users\M\AppData\Local\Temp\npm-3128-4424fe92\unpack-f06d57fad94a\package.json
+26 error code ENOENT
+27 error errno -4058
+28 error syscall open
+29 error enoent ENOENT: no such file or directory, open 'C:\Users\M\AppData\Local\Temp\npm-3128-4424fe92\unpack-f06d57fad94a\package.json'
+29 error enoent This is most likely not a problem with npm itself
+29 error enoent and is related to npm not being able to find a file.
+30 verbose exit [ -4058, true ]
